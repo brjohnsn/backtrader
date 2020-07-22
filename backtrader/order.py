@@ -352,13 +352,8 @@ class OrderBase(with_metaclass(MetaParams, object)):
         elif isinstance(self.valid, datetime.timedelta):
             # offset with regards to now ... get utcnow + offset
             # when reading with date2num ... it will be automatically localized
-            if self.valid == self.DAY:
-                valid = datetime.datetime.combine(
-                    self.data.datetime.date(), datetime.time(23, 59, 59, 9999))
-            else:
-                valid = self.data.datetime.datetime() + self.valid
-
-            self.valid = self.data.date2num(valid)
+            if not self.valid == self.DAY:
+                self.valid = self.data.date2num(self.data.datetime.datetime() + self.valid)
 
         elif self.valid is not None:
             if not self.valid:  # avoid comparing None and 0
@@ -584,6 +579,11 @@ class Order(OrderBase):
     def expire(self):
         if self.exectype == Order.Market:
             return False  # will be executed yes or yes
+
+        if self.valid == self.DAY:
+            self.valid = self.data.date2num(datetime.datetime.combine(
+                    self.data.datetime.date(), datetime.time(23, 59, 59, 9999)))
+            return False
 
         if self.valid and self.data.datetime[0] > self.valid:
             self.status = Order.Expired
